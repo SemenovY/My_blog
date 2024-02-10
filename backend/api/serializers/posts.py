@@ -13,8 +13,8 @@ class BlogPostSerializer(serializers.Serializer):
     - published (bool): Указывает, опубликована ли запись в блоге.
     """
 
-    user: str = serializers.CharField()
-    title: str = serializers.CharField()
-    text: str = serializers.CharField()
-    created_at: serializers.DateTimeField = serializers.DateTimeField()
-    published: bool = serializers.BooleanField()
+    user = serializers.CharField()
+    title = serializers.CharField()
+    text = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    published = serializers.BooleanField()

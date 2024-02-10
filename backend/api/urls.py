@@ -6,7 +6,7 @@ app_name = "api"
 
 urlpatterns = [
     # Эндпоинты для пользователей, если возникнет необходимость в дальнейшем.
-    path("users/", UserListCreateAPIView.as_view(), name="user-list-create"),
+    path("users/", UserListCreateAPIView.as_view(), name="user-list"),
     path("users/<int:pk>/", UserDetailAPIView.as_view(), name="user-detail"),
     # Эндпоинты для постов
     path("posts/", BlogPostListCreateAPIView.as_view(), name="post-list-create"),

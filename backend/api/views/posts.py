@@ -1,20 +1,37 @@
+from api.permissions import IsAdminOrOwner
 from api.serializers.posts import BlogPostSerializer
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from posts.models import BlogPost
 from rest_framework import status
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
+@extend_schema(
+    tags=["Посты"],
+    methods=["GET", "POST"],
+    description="Получение списка и создание поста",
+)
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получить список всех постов",
+    ),
+    post=extend_schema(
+        summary="Создать новый пост",
+    ),
+)
 class BlogPostListCreateAPIView(APIView):
     """
-    API-вью для получения списка и создания блог-постов.
+    API-вью для получения списка и создания постов.
 
     Атрибуты:
     - permission_classes: Список классов разрешений, управляющих доступом к вью.
     """
 
     permission_classes = [IsAuthenticated]
+    serializer_class = BlogPostSerializer
 
     def get(self, request):
         """
@@ -24,8 +41,11 @@ class BlogPostListCreateAPIView(APIView):
         Response: Сериализованный список постов.
         """
         blog_posts = BlogPost.objects.all()
-        serializer = BlogPostSerializer(blog_posts, many=True)
-        return Response(serializer.data)
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        result_page = paginator.paginate_queryset(blog_posts, request)
+        serializer = BlogPostSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
         """
@@ -44,6 +64,22 @@ class BlogPostListCreateAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    tags=["Посты"],
+    methods=["GET", "PUT", "DELETE"],
+    description="Просмотр, обновление и удаление конкретного поста",
+)
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получить конкретный пост",
+    ),
+    put=extend_schema(
+        summary="Обновить конкретный пост",
+    ),
+    delete=extend_schema(
+        summary="Удалить конкретный пост",
+    ),
+)
 class BlogPostDetailAPIView(APIView):
     """
     API-вью для просмотра, обновления и удаления конкретного поста.
@@ -52,7 +88,8 @@ class BlogPostDetailAPIView(APIView):
     - permission_classes: Список классов разрешений, управляющих доступом к вью.
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminOrOwner]
+    serializer_class = BlogPostSerializer
 
     def get_object(self, pk):
         """

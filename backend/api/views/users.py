@@ -2,12 +2,26 @@ from typing import Union
 
 from api.serializers.users import UserSerializer
 from django.http import Http404
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from users.models import CustomUser
 
 
+@extend_schema(
+    tags=["Пользователи"],
+    methods=["GET", "POST"],
+    description="Все пользователи",
+)
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получить список всех пользователей",
+    ),
+    post=extend_schema(
+        summary="Создать нового пользователя",
+    ),
+)
 class UserListCreateAPIView(APIView):
     """
     Представление для операций чтения и создания пользователей.
@@ -19,6 +33,8 @@ class UserListCreateAPIView(APIView):
         post(self, request) -> Response:
             Создает нового пользователя.
     """
+
+    serializer_class = UserSerializer
 
     def get(self, request) -> Response:
         """
@@ -51,6 +67,22 @@ class UserListCreateAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(
+    tags=["Пользователи"],
+    methods=["GET", "PUT", "DELETE"],
+    description="Чтение, обновление и удаления пользователя",
+)
+@extend_schema_view(
+    get=extend_schema(
+        summary="Получает данные конкретного пользователя",
+    ),
+    put=extend_schema(
+        summary="Обновляет данные конкретного пользователя",
+    ),
+    delete=extend_schema(
+        summary="Удаляет конкретного пользователя",
+    ),
+)
 class UserDetailAPIView(APIView):
     """
     Представление для операций чтения, обновления и удаления пользователя.
@@ -65,6 +97,8 @@ class UserDetailAPIView(APIView):
         delete(self, request, pk) -> Response:
             Удаляет конкретного пользователя.
     """
+
+    serializer_class = UserSerializer
 
     def get_object(self, pk: int) -> Union[CustomUser, Http404]:
         """
