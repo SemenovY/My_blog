@@ -9,7 +9,29 @@ readme = "README.md"
 python = "^3.11"
 django = "^5.0.2"
 djangorestframework = "^3.14.0"
+pre-commit = "^3.6.0"
+python-dotenv = "^1.0.1"
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+flake8 = "^7.0.0"
+isort = "^5.13.2"
+black = "^24.1.1"
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 120
+multi_line_output = 3
+skip_gitignore = true
+skip_glob = ["**/migrations/*", "**/settings/*"]
+include_trailing_comma = true
+use_parentheses = true
+ensure_newline_before_comments = true
 
 [build-system]
 requires = ["poetry-core"]
