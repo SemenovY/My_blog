@@ -1,164 +1,50 @@
-from typing import Union
-
 from api.serializers.users import UserSerializer
-from django.http import Http404
-from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema
+from rest_framework import generics
 from users.models import CustomUser
 
 
-@extend_schema(
-    tags=["Пользователи"],
-    methods=["GET", "POST"],
-    description="Все пользователи",
-)
-@extend_schema_view(
-    get=extend_schema(
-        summary="Получить список всех пользователей",
-    ),
-    post=extend_schema(
-        summary="Создать нового пользователя",
-    ),
-)
-class UserListCreateAPIView(APIView):
+class CustomUserListCreateAPIView(generics.ListCreateAPIView):
     """
-    Представление для операций чтения и создания пользователей.
+    Класс представления для списка и создания пользователей.
 
-    Методы:
-        get(self, request) -> Response:
-            Получает список всех пользователей.
-
-        post(self, request) -> Response:
-            Создает нового пользователя.
+    Атрибуты:
+    - queryset: QuerySet модели CustomUser
+    - serializer_class: Класс сериализатора для модели CustomUser
     """
 
+    queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
 
-    def get(self, request) -> Response:
-        """
-        Получает список всех пользователей.
+    @extend_schema(tags=["Пользователи"], summary="Получить список всех пользователей", operation_id="get_all_users")
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
-        Аргументы:
-            request: Запрос.
-
-        Возвращает:
-            Response: Ответ с данными пользователями.
-        """
-        users = CustomUser.objects.all()
-        serializer = UserSerializer(users, many=True)
-        return Response(serializer.data)
-
-    def post(self, request) -> Response:
-        """
-        Создает нового пользователя.
-
-        Аргументы:
-            request: Запрос.
-
-        Возвращает:
-            Response: Ответ с данными созданного пользователя.
-        """
-        serializer = UserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    @extend_schema(tags=["Пользователи"], summary="Создать нового пользователя", operation_id="create_user")
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
-@extend_schema(
-    tags=["Пользователи"],
-    methods=["GET", "PUT", "DELETE"],
-    description="Чтение, обновление и удаления пользователя",
-)
-@extend_schema_view(
-    get=extend_schema(
-        summary="Получает данные конкретного пользователя",
-    ),
-    put=extend_schema(
-        summary="Обновляет данные конкретного пользователя",
-    ),
-    delete=extend_schema(
-        summary="Удаляет конкретного пользователя",
-    ),
-)
-class UserDetailAPIView(APIView):
+class CustomUserDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Представление для операций чтения, обновления и удаления пользователя.
+    Класс представления для получения, обновления и удаления пользователей.
 
-    Методы:
-        get(self, request, pk) -> Response:
-            Получает данные конкретного пользователя.
-
-        put(self, request, pk) -> Response:
-            Обновляет данные конкретного пользователя.
-
-        delete(self, request, pk) -> Response:
-            Удаляет конкретного пользователя.
+    Атрибуты:
+    - queryset: QuerySet модели CustomUser
+    - serializer_class: Класс сериализатора для модели CustomUser
     """
 
+    queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
 
-    def get_object(self, pk: int) -> Union[CustomUser, Http404]:
-        """
-        Получает объект пользователя по его идентификатору.
+    @extend_schema(tags=["Пользователи"], summary="Получить конкретного пользователя", operation_id="get_user_detail")
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
-        Аргументы:
-            pk (int): Идентификатор пользователя.
+    @extend_schema(tags=["Пользователи"], summary="Обновить конкретного пользователя", operation_id="update_user")
+    def put(self, request, *args, **kwargs):
+        return super().put(request, *args, **kwargs)
 
-        Возвращает:
-            Union[CustomUser, Http404]: Объект пользователя или Http404, если пользователь не найден.
-        """
-        try:
-            return CustomUser.objects.get(pk=pk)
-        except CustomUser.DoesNotExist:
-            raise Http404
-
-    def get(self, request, pk: int) -> Response:
-        """
-        Получает данные конкретного пользователя.
-
-        Аргументы:
-            request: Запрос.
-            pk (int): Идентификатор пользователя.
-
-        Возвращает:
-            Response: Ответ с данными пользователя.
-        """
-        user = self.get_object(pk)
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
-
-    def put(self, request, pk: int) -> Response:
-        """
-        Обновляет данные конкретного пользователя.
-
-        Аргументы:
-            request: Запрос.
-            pk (int): Идентификатор пользователя.
-
-        Возвращает:
-            Response: Ответ с обновленными данными пользователя.
-        """
-        user = self.get_object(pk)
-        serializer = UserSerializer(user, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, pk: int) -> Response:
-        """
-        Удаляет конкретного пользователя.
-
-        Аргументы:
-            request: Запрос.
-            pk (int): Идентификатор пользователя.
-
-        Возвращает:
-            Response: Ответ об успешном удалении пользователя.
-        """
-        user = self.get_object(pk)
-        user.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    @extend_schema(tags=["Пользователи"], summary="Удалить конкретного пользователя", operation_id="delete_user")
+    def delete(self, request, *args, **kwargs):
+        return super().delete(request, *args, **kwargs)

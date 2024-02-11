@@ -1,6 +1,6 @@
-from api.permissions import IsAdminOrOwner
+from api.permissions import IsAuthorOrReadOnly
 from api.serializers.posts import BlogPostSerializer
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import extend_schema
 from posts.models import BlogPost
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
@@ -9,19 +9,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 
-@extend_schema(
-    tags=["Посты"],
-    methods=["GET", "POST"],
-    description="Получение списка и создание поста",
-)
-@extend_schema_view(
-    get=extend_schema(
-        summary="Получить список всех постов",
-    ),
-    post=extend_schema(
-        summary="Создать новый пост",
-    ),
-)
 class BlogPostListCreateAPIView(APIView):
     """
     API-вью для получения списка и создания постов.
@@ -33,6 +20,7 @@ class BlogPostListCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = BlogPostSerializer
 
+    @extend_schema(tags=["Посты"], summary="Получить список всех постов", operation_id="get_all_posts")
     def get(self, request):
         """
         Получить список всех постов.
@@ -40,13 +28,14 @@ class BlogPostListCreateAPIView(APIView):
         Возвращает:
         Response: Сериализованный список постов.
         """
-        blog_posts = BlogPost.objects.all()
+        posts = BlogPost.objects.all().order_by("-created_at")
         paginator = PageNumberPagination()
         paginator.page_size = 10
-        result_page = paginator.paginate_queryset(blog_posts, request)
+        result_page = paginator.paginate_queryset(posts, request)
         serializer = BlogPostSerializer(result_page, many=True)
         return paginator.get_paginated_response(serializer.data)
 
+    @extend_schema(tags=["Посты"], summary="Создать новый пост", operation_id="create_post")
     def post(self, request):
         """
         Создать новый пост.
@@ -58,28 +47,13 @@ class BlogPostListCreateAPIView(APIView):
         Response: Сериализованное представление созданного поста.
         """
         serializer = BlogPostSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.fields["user"].read_only = True
+        serializer.is_valid(raise_exception=True)
+        serializer.validated_data["user"] = request.user
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-@extend_schema(
-    tags=["Посты"],
-    methods=["GET", "PUT", "DELETE"],
-    description="Просмотр, обновление и удаление конкретного поста",
-)
-@extend_schema_view(
-    get=extend_schema(
-        summary="Получить конкретный пост",
-    ),
-    put=extend_schema(
-        summary="Обновить конкретный пост",
-    ),
-    delete=extend_schema(
-        summary="Удалить конкретный пост",
-    ),
-)
 class BlogPostDetailAPIView(APIView):
     """
     API-вью для просмотра, обновления и удаления конкретного поста.
@@ -88,7 +62,7 @@ class BlogPostDetailAPIView(APIView):
     - permission_classes: Список классов разрешений, управляющих доступом к вью.
     """
 
-    permission_classes = [IsAuthenticated, IsAdminOrOwner]
+    permission_classes = [IsAuthorOrReadOnly]
     serializer_class = BlogPostSerializer
 
     def get_object(self, pk):
@@ -109,6 +83,7 @@ class BlogPostDetailAPIView(APIView):
         except BlogPost.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
+    @extend_schema(tags=["Посты"], summary="Получить конкретный пост", operation_id="get_post_detail")
     def get(self, request, pk):
         """
         Получить конкретный пост.
@@ -123,31 +98,25 @@ class BlogPostDetailAPIView(APIView):
         Выбрасывает:
         Http404: Если пост с указанным идентификатором не найден.
         """
-        blog_post = self.get_object(pk)
-        serializer = BlogPostSerializer(blog_post)
+        post = self.get_object(pk)
+        serializer = BlogPostSerializer(post)
         return Response(serializer.data)
 
+    @extend_schema(tags=["Посты"], summary="Обновить конкретный пост", operation_id="update_post")
     def put(self, request, pk):
         """
         Обновить конкретный пост.
-
-        Аргументы:
-        - request (Any): Объект HTTP-запроса.
-        - pk (int): Идентификатор поста.
-
-        Возвращает:
-        Response: Сериализованное представление обновленного поста.
-
-        Выбрасывает:
-        Http404: Если пост с указанным идентификатором не найден.
         """
-        blog_post = self.get_object(pk)
-        serializer = BlogPostSerializer(blog_post, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        instance = self.get_object(pk)
+        self.check_object_permissions(request, instance)
 
+        serializer = BlogPostSerializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+    @extend_schema(tags=["Посты"], summary="Удалить конкретный пост", operation_id="delete_post")
     def delete(self, request, pk):
         """
         Удалить конкретный пост.
@@ -162,6 +131,7 @@ class BlogPostDetailAPIView(APIView):
         Выбрасывает:
         Http404: Если пост с указанным идентификатором не найден.
         """
-        blog_post = self.get_object(pk)
-        blog_post.delete()
+        post = self.get_object(pk)
+        self.check_object_permissions(request, post)
+        post.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

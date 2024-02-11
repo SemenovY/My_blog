@@ -14,6 +14,6 @@ class BlogPostAdmin(admin.ModelAdmin):
         search_fields (tuple): Поля, используемые для поиска в верхней части страницы списка изменений.
     """
 
-    list_display = ("title", "user", "created_at", "is_published")
+    list_display = ("id", "title", "user", "created_at", "is_published")
     list_filter = ("created_at", "is_published")
     search_fields = ("title", "text", "user__username")

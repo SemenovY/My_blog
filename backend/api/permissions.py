@@ -1,18 +1,20 @@
-from typing import Any
-
-from django.http import HttpRequest
+from posts.models import BlogPost
 from rest_framework import permissions
 
 
-class IsAdminOrOwner(permissions.BasePermission):
+class IsAuthorOrReadOnly(permissions.BasePermission):
     """
-    Пользовательское разрешение, позволяющее только администраторам или владельцу объекта изменять или удалять его.
+    Пользователи могут редактировать или удалять свои собственные посты.
+
+    Не могут редактировать или удалять посты других пользователей.
     """
 
-    message = "Only administrators or the owner have access."
+    def has_permission(self, request, view):
+        """Автор или только смотреть, или создать."""
+        return request.method in permissions.SAFE_METHODS or request.user.is_authenticated
 
-    def has_permission(self, request: HttpRequest, view: Any) -> bool:
-        return request.user.is_authenticated
-
-    def has_object_permission(self, request: HttpRequest, view: Any, obj: Any) -> bool:
-        return request.user.is_admin or (obj.user == request.user and request.method in permissions.SAFE_METHODS)
+    def has_object_permission(self, request, view, obj):
+        """Проверяем совпадает ли автор поста с пользователем из запроса, если да, то даём все права."""
+        if isinstance(obj, BlogPost):
+            return request.method in permissions.SAFE_METHODS or obj.user == request.user
+        return False

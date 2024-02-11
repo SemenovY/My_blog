@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+
+  app:
+    build:
+      dockerfile: Dockerfile
+      context: .
+    container_name: app
+    env_file: .env
+    command: >
+      sh -c "
+        poetry run python3 backend/manage.py makemigrations &&
+        poetry run python3 backend/manage.py migrate &&
+        poetry run python3 backend/manage.py runserver 0.0.0.0:8000
+      "
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app/backend

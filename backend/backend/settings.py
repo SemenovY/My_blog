@@ -3,6 +3,7 @@ Django settings for backend project.
 """
 
 import os
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -20,8 +21,8 @@ ALLOWED_HOSTS = [
 ]
 
 if DEBUG:
+    ALLOWED_HOSTS.append("0.0.0.0")
     ALLOWED_HOSTS.append("127.0.0.1")
-    ALLOWED_HOSTS.append("localhost")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -31,6 +32,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "rest_framework",
+    "djoser",
     "users.apps.UsersConfig",
     "posts.apps.PostsConfig",
     "api.apps.ApiConfig",
@@ -75,18 +77,7 @@ DATABASES = {
         "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
     }
 }
-# DATABASES = {
-#     "default": {
-#         "ENGINE": os.getenv(
-#             "DB_ENGINE", default="django.db.backends.postgresql"
-#         ),
-#         "NAME": os.getenv("DB_NAME"),
-#         "USER": os.getenv("POSTGRES_USER"),
-#         "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-#         "HOST": os.getenv("DB_HOST"),
-#         "PORT": os.getenv("DB_PORT"),
-#     }
-# }
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -104,9 +95,20 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
+SIMPLE_JWT = {
+    # Устанавливаем срок жизни токена
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "my-blog",
